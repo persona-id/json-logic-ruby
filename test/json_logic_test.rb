@@ -110,6 +110,17 @@ class JSONLogicTest < Minitest::Test
     )
   end
 
+  def test_uses_data_complex
+    assert_equal ["temp", "pie.filling"], JSONLogic.uses_data(
+      {
+        "and" => [
+          {"<" => [ { "var" => "temp" }, 110 ]},  
+          {"==" => [ { "var" => "pie.filling" }, "apple" ]}  
+        ]
+      }   
+    )
+  end
+
   def test_uses_data_missing
     vars = JSONLogic.uses_data(
       {
@@ -131,4 +142,5 @@ class JSONLogicTest < Minitest::Test
     assert_equal ["y"], JSONLogic.apply({"missing": [vars]}, provided_data_missing_y)
     assert_equal ["x"], JSONLogic.apply({"missing": [vars]}, provided_data_missing_x)
   end
+
 end
