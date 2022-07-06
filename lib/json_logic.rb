@@ -29,6 +29,8 @@ module JSONLogic
           collection.concat(uses_data(val))
         }
       end
+    elsif logic.is_a?(Array)
+      logic.each { |val| collection.concat(uses_data(val)) }
     end
 
     return collection.uniq

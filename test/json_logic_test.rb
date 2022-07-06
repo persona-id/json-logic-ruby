@@ -87,7 +87,7 @@ class JSONLogicTest < Minitest::Test
       },
       { "x" => "foo"}
     )
-    
+
     assert_equal false, JSONLogic.apply(
       {
         "in" => [
@@ -110,14 +110,25 @@ class JSONLogicTest < Minitest::Test
     )
   end
 
+  def test_uses_data_array
+    assert_equal ["a", "x", "y", "z"], JSONLogic.uses_data(
+      {
+        "in" => [
+          [ { "var" => "a" }, { "var" => "x" } ],
+          [ { "var" => "y" }, { "var" => "z" } ]
+        ]
+      }
+    )
+  end
+
   def test_uses_data_complex
     assert_equal ["temp", "pie.filling"], JSONLogic.uses_data(
       {
         "and" => [
-          {"<" => [ { "var" => "temp" }, 110 ]},  
-          {"==" => [ { "var" => "pie.filling" }, "apple" ]}  
+          {"<" => [ { "var" => "temp" }, 110 ]},
+          {"==" => [ { "var" => "pie.filling" }, "apple" ]}
         ]
-      }   
+      }
     )
   end
 
