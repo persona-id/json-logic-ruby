@@ -154,4 +154,67 @@ class JSONLogicTest < Minitest::Test
     assert_equal ["x"], JSONLogic.apply({"missing": [vars]}, provided_data_missing_x)
   end
 
+  def test_nil_var_substr
+    logic = {"substr" => [{"var" => "test"}, 1]}
+    assert_nil(JSONLogic.apply(logic, {}))
+  end
+
+  def test_nil_var_equals
+    logic = {"=" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"==" => [ 10, {"var" => "test"} ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"===" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"!=" => [ 10, {"var" => "test"} ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"!==" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+  end
+
+  def test_nil_var_gt_lt
+    logic = {">" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {">=" => [ 10, {"var" => "test"} ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"<" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"<=" => [ 10, {"var" => "test"} ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+  end
+
+  def test_nil_var_max_min
+    logic = {"max" => [ {"var" => "test"}, 10, 20 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"min" => [ 10, {"var" => "test"}, 20 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+  end
+
+  def test_nil_var_math_operators
+    logic = {"+" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"-" => [ 10, {"var" => "test"} ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"*" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"/" => [ 10, {"var" => "test"} ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"%" => [ {"var" => "test"}, 10 ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+
+    logic = {"^" => [ 10, {"var" => "test"} ]}
+    assert_nil(JSONLogic.apply(logic, {}))
+  end
 end
