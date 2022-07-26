@@ -217,4 +217,24 @@ class JSONLogicTest < Minitest::Test
     logic = {"^" => [ 10, {"var" => "test"} ]}
     assert_nil(JSONLogic.apply(logic, {}))
   end
+
+  def test_values_dates
+    logic = {">" => [ Time.at(1), Time.at(0) ]}
+    assert_equal(true, JSONLogic.apply(logic, {}))
+
+    logic = {">=" => [ Time.at(0), Time.at(1) ]}
+    assert_equal(false, JSONLogic.apply(logic, {}))
+
+    logic = {"<" => [ Time.at(1), Time.at(0) ]}
+    assert_equal(false, JSONLogic.apply(logic, {}))
+
+    logic = {"<=" => [ Time.at(0), Time.at(1) ]}
+    assert_equal(true, JSONLogic.apply(logic, {}))
+  end
+
+  def test_format_values
+    assert_equal [1.0, 2.0], JSONLogic::Operation.format_values(["1", 2])
+    assert_equal ["test", "hello"], JSONLogic::Operation.format_values(["TEST", "hEllO"])
+    assert_equal ["1969-12-31 16:00:00 -0800", "1969-12-31 16:00:01 -0800"], JSONLogic::Operation.format_values([Time.at(0), Time.at(1)])
+  end
 end
