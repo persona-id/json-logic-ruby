@@ -33,7 +33,6 @@ module JSONLogic
          v[0][v[1]..limit]
       end,
       'none' => -> (v,d) do
-
         v[0].each do |val|
           this_val_satisfies_condition = interpolated_block(v[1], val)
           if this_val_satisfies_condition
@@ -67,9 +66,10 @@ module JSONLogic
           return value if condition.truthy?
         end
       },
-      '=='    => ->(v, d) { v[0].to_s == v[1].to_s },
+      '='    => ->(v, d) { v[0].to_s.downcase == v[1].to_s.downcase },
+      '=='    => ->(v, d) { v[0].to_s.downcase == v[1].to_s.downcase },
       '==='   => ->(v, d) { v[0] == v[1] },
-      '!='    => ->(v, d) { v[0].to_s != v[1].to_s },
+      '!='    => ->(v, d) { v[0].to_s.downcase != v[1].to_s.downcase },
       '!=='   => ->(v, d) { v[0] != v[1] },
       '!'     => ->(v, d) { v[0].falsy? },
       '!!'    => ->(v, d) { v[0].truthy? },
@@ -79,12 +79,12 @@ module JSONLogic
         result.nil? ? v.last : result
       },
       '?:'    => ->(v, d) { LAMBDAS['if'].call(v, d) },
-      '>'     => ->(v, d) { v.map(&:to_f).each_cons(2).all? { |i, j| i > j } },
-      '>='    => ->(v, d) { v.map(&:to_f).each_cons(2).all? { |i, j| i >= j } },
-      '<'     => ->(v, d) { v.map(&:to_f).each_cons(2).all? { |i, j| i < j } },
-      '<='    => ->(v, d) { v.map(&:to_f).each_cons(2).all? { |i, j| i <= j } },
-      'max'   => ->(v, d) { v.map(&:to_f).max },
-      'min'   => ->(v, d) { v.map(&:to_f).min },
+      '>'     => ->(v, d) { format_values(v).each_cons(2).all? { |i, j| i > j } },
+      '>='    => ->(v, d) { format_values(v).each_cons(2).all? { |i, j| i >= j } },
+      '<'     => ->(v, d) { format_values(v).each_cons(2).all? { |i, j| i < j } },
+      '<='    => ->(v, d) { format_values(v).each_cons(2).all? { |i, j| i <= j } },
+      'max'   => ->(v, d) { format_values(v).max },
+      'min'   => ->(v, d) { format_values(v).min },
       '+'     => ->(v, d) { v.map(&:to_f).reduce(:+) },
       '-'     => ->(v, d) { v.map!(&:to_f); v.size == 1 ? -v.first : v.reduce(:-) },
       '*'     => ->(v, d) { v.map(&:to_f).reduce(:*) },
@@ -92,7 +92,10 @@ module JSONLogic
       '%'     => ->(v, d) { v.map(&:to_i).reduce(:%) },
       '^'     => ->(v, d) { v.map(&:to_f).reduce(:**) },
       'merge' => ->(v, d) { v.flatten },
-      'in'    => ->(v, d) { interpolated_block(v[1], d).include? v[0] },
+      'in'    => ->(v, d) {
+        v1_arg = interpolated_block(v[1], d)
+        (v1_arg.is_a?(Array) ? v1_arg.flatten : v1_arg).include? v[0]
+      },
       'cat'   => ->(v, d) { v.map(&:to_s).join },
       'log'   => ->(v, d) { puts v }
     }
@@ -105,7 +108,6 @@ module JSONLogic
     def self.perform(operator, values, data)
       # If iterable, we can only pre-fill the first element, the second one must be evaluated per element.
       # If not, we can prefill all.
-
       if is_iterable?(operator)
         interpolated = [JSONLogic.apply(values[0], data), *values[1..-1]]
       else
@@ -114,8 +116,21 @@ module JSONLogic
 
       interpolated.flatten!(1) if interpolated.size == 1           # [['A']] => ['A']
 
-      return LAMBDAS[operator.to_s].call(interpolated, data) if is_standard?(operator)
-      send(operator, interpolated, data)
+      nil_vars = values.filter.with_index { |v, i| !JSONLogic.uses_data(v).empty? && interpolated[i].nil? }
+      first_var_is_nil = !JSONLogic.uses_data(values.first).empty? && interpolated.first.nil?
+
+      if !is_standard?(operator)
+        send(operator, interpolated, data)
+      elsif is_nilable?(operator) && !nil_vars.empty?
+        # short circuit and return nil
+        nil
+      elsif is_iterable?(operator) && first_var_is_nil
+        # if an array variable resolves to nil, default to []
+        interpolated[0] = []
+        LAMBDAS[operator.to_s].call(interpolated, data)
+      else
+        LAMBDAS[operator.to_s].call(interpolated, data)
+      end
     end
 
     def self.is_standard?(operator)
@@ -128,9 +143,46 @@ module JSONLogic
       ['filter', 'some', 'all', 'none', 'in', 'map', 'reduce'].include?(operator.to_s)
     end
 
+    def self.is_nilable?(operator)
+      [
+        'substr',
+        '=',
+        '==',
+        '===',
+        '!=',
+        '!==',
+        '>',
+        '>=',
+        '<',
+        '<=',
+        'max',
+        'min',
+        '+',
+        '-',
+        '*',
+        '/',
+        '%',
+        '^'
+      ].include?(operator.to_s)
+    end
+
     def self.add_operation(operator, function)
       self.class.send(:define_method, operator) do |v, d|
         function.call(v, d)
+      end
+    end
+
+    def self.format_values(values)
+      values = Array(values).flatten
+      # If at least 1 value is numeric, assume all values can be treated as such
+      # Sometimes numbers are represented as strings, so they need to be converted
+      if values.any? { |v| v.is_a?(Numeric) }
+        values.map(&:to_f)
+      elsif values.all? { |v| v.is_a?(String) }
+        values.map(&:downcase)
+      else
+        # Convert everything to strings. This handles date comparison
+        values.map(&:to_s)
       end
     end
   end
