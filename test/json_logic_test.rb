@@ -161,19 +161,19 @@ class JSONLogicTest < Minitest::Test
 
   def test_nil_var_equals
     logic = {"=" => [ {"var" => "test"}, 10 ]}
-    assert_nil(JSONLogic.apply(logic, {}))
+    assert_equal(false, JSONLogic.apply(logic, {}))
 
     logic = {"==" => [ 10, {"var" => "test"} ]}
-    assert_nil(JSONLogic.apply(logic, {}))
+    assert_equal(false, JSONLogic.apply(logic, {}))
 
     logic = {"===" => [ {"var" => "test"}, 10 ]}
-    assert_nil(JSONLogic.apply(logic, {}))
+    assert_equal(false, JSONLogic.apply(logic, {}))
 
     logic = {"!=" => [ 10, {"var" => "test"} ]}
-    assert_nil(JSONLogic.apply(logic, {}))
+    assert_equal(true, JSONLogic.apply(logic, {}))
 
     logic = {"!==" => [ {"var" => "test"}, 10 ]}
-    assert_nil(JSONLogic.apply(logic, {}))
+    assert_equal(true, JSONLogic.apply(logic, {}))
   end
 
   def test_nil_var_gt_lt

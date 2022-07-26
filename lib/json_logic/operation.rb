@@ -146,11 +146,6 @@ module JSONLogic
     def self.is_nilable?(operator)
       [
         'substr',
-        '=',
-        '==',
-        '===',
-        '!=',
-        '!==',
         '>',
         '>=',
         '<',
