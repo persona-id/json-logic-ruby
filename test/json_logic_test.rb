@@ -154,4 +154,57 @@ class JSONLogicTest < Minitest::Test
     assert_equal ["x"], JSONLogic.apply({"missing": [vars]}, provided_data_missing_x)
   end
 
+  def test_deep_fetch_array_traversal
+    data = { "addresses" => [{ "city" => "Oakland" }, { "city" => "SF" }] }
+    assert_equal "Oakland", data.deep_fetch("addresses.0.city")
+    assert_equal "SF",      data.deep_fetch("addresses.1.city")
+  end
+
+  def test_deep_fetch_array_out_of_bounds_returns_default
+    data = { "addresses" => [{ "city" => "Oakland" }] }
+    assert_nil data.deep_fetch("addresses.9.city")
+    assert_equal "fallback", data.deep_fetch("addresses.9.city", "fallback")
+  end
+
+  def test_deep_fetch_missing_key_returns_default
+    data = { "user" => { "name" => "Alice" } }
+    assert_nil data.deep_fetch("user.age")
+    assert_equal "unknown", data.deep_fetch("user.age", "unknown")
+  end
+
+  def test_deep_fetch_preserves_false_value
+    data = { "flags" => [{ "enabled" => false }] }
+    assert_equal false, data.deep_fetch("flags.0.enabled")
+  end
+
+  def test_var_with_array_traversal
+    logic = { "var" => "addresses.0.city" }
+    data  = { "addresses" => [{ "city" => "Oakland" }] }
+    assert_equal "Oakland", JSONLogic.apply(logic, data)
+  end
+
+  def test_var_with_non_first_array_element
+    logic = { "var" => "addresses.2.city" }
+    data  = { "addresses" => [{ "city" => "Oakland" }, { "city" => "SF" }, { "city" => "Los Angeles" }] }
+    assert_equal "Los Angeles", JSONLogic.apply(logic, data)
+  end
+
+  def test_var_with_array_data_containing_hashes
+    logic = { "var" => "1.city" }
+    data  = [{ "city" => "Oakland" }, { "city" => "SF" }]
+    assert_equal "SF", JSONLogic.apply(logic, data)
+  end
+
+  def test_var_with_array_data_deeper_nesting
+    logic = { "var" => "0.address.city" }
+    data  = [{ "address" => { "city" => "Oakland" } }]
+    assert_equal "Oakland", JSONLogic.apply(logic, data)
+  end
+
+  def test_var_with_array_data_missing_key_returns_nil
+    logic = { "var" => "0.missing" }
+    data  = [{ "city" => "Oakland" }]
+    assert_nil JSONLogic.apply(logic, data)
+  end
+
 end

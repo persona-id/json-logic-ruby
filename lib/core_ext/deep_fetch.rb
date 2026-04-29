@@ -1,17 +1,22 @@
 require 'backport_dig' if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.3')
 
-class Hash
+module DeepFetchable
   def deep_fetch(key, default = nil)
     keys = key.to_s.split('.')
-    value = dig(*keys) rescue default
+    value = keys.reduce(self) do |node, k|
+      break default if node.nil?
+      node.is_a?(Array) ? node[k.to_i] : node[k]
+    end
     value.nil? ? default : value  # value can be false (Boolean)
+  rescue
+    default
   end
 end
 
+class Hash
+  include DeepFetchable
+end
+
 class Array
-  def deep_fetch(index, default = nil)
-    indexes = index.to_s.split('.').map(&:to_i)
-    value = dig(*indexes) rescue default
-    value.nil? ? default : value  # value can be false (Boolean)
-  end
+  include DeepFetchable
 end
