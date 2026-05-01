@@ -1,3 +1,3 @@
 module JSONLogic
-  VERSION = '0.4.7.persona'
+  VERSION = '0.4.9.persona'
 end
